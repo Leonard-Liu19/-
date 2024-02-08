@@ -6,6 +6,8 @@ import Error from "./Error";
 import StartScreen from "./StartScreen";
 import Question from "./Question";
 import NextButton from "./NextButton";
+import Progress from "./Progress";
+import Finished from "./Finished";
 
 const initialState = {
 	questions: [],
@@ -14,6 +16,7 @@ const initialState = {
 	index: 0,
 	answer: null,
 	points: 0,
+	highestPoints: 0,
 };
 
 function reducer(state, action) {
@@ -36,17 +39,30 @@ function reducer(state, action) {
 			};
 		case "nextQuestion":
 			return { ...state, index: state.index + 1, answer: null };
+		case "finished":
+			return {
+				...state,
+				status: "finished",
+				highestPoints:
+					state.points > state.highestPoints
+						? state.points
+						: state.highestPoints,
+			};
 		default:
 			throw new Error("Action Unknown");
 	}
 }
 
 export default function App() {
-	const [{ questions, status, index, answer, points }, dispatch] = useReducer(
-		reducer,
-		initialState
-	);
+	const [
+		{ questions, status, index, answer, points, highestPoints },
+		dispatch,
+	] = useReducer(reducer, initialState);
 	const numQuestions = questions.length;
+	const maxPossiblePoints = questions.reduce(
+		(sum, cur_item) => (sum += cur_item.points),
+		0
+	);
 
 	const handleStart = () => {
 		dispatch({ type: "start" });
@@ -73,12 +89,32 @@ export default function App() {
 				)}
 				{status === "active" && (
 					<>
+						<Progress
+							index={index}
+							length={questions.length}
+							points={points}
+							maxPoints={maxPossiblePoints}
+						/>
 						<Question
 							question={questions[index]}
 							dispatch={dispatch}
 							answer={answer}
 						/>
-						<NextButton dispatch={dispatch} answer={answer} />
+						<NextButton
+							dispatch={dispatch}
+							answer={answer}
+							index={index}
+							numQuestions={numQuestions}
+						/>
+					</>
+				)}
+				{status === "finished" && (
+					<>
+						<Finished
+							points={points}
+							maxPossiblePoints={maxPossiblePoints}
+							highestPoints={highestPoints}
+						/>
 					</>
 				)}
 			</Main>
